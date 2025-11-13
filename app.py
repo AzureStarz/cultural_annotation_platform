@@ -1,0 +1,193 @@
+from flask import Flask, render_template, request, jsonify, redirect, url_for
+import json
+import os
+import random
+from datetime import datetime
+import glob
+
+app = Flask(__name__)
+
+LANGUAGES = [
+    'Arabic', 'Chinese', 'English', 'German',
+    'Japanese', 'Korean', 'Russian',
+    'Spanish', 'Thai', 'Vietnamese'
+]
+
+OUTPUT_DIR = 'outputs'
+AUTOSAVE_DIR = os.path.join(OUTPUT_DIR, 'autosave')
+JUDGMENT_DIR = os.path.join(OUTPUT_DIR, 'judgment')
+WRITING_DIR = os.path.join(OUTPUT_DIR, 'writing')
+
+os.makedirs(AUTOSAVE_DIR, exist_ok=True)
+os.makedirs(JUDGMENT_DIR, exist_ok=True)
+os.makedirs(WRITING_DIR, exist_ok=True)
+
+for lang in LANGUAGES:
+    os.makedirs(os.path.join(JUDGMENT_DIR, lang), exist_ok=True)
+    os.makedirs(os.path.join(WRITING_DIR, lang), exist_ok=True)
+
+def load_examples(task_type, language):
+    """Load examples from JSON file"""
+    if task_type == 'judgment':
+        file_path = f'completion_judgment/{language}_carb_samples.json'
+    else:
+        file_path = f'completion_writing/{language}_carb_samples.json'
+
+    if not os.path.exists(file_path):
+        return []
+
+    with open(file_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def load_progress(annotator_id, task_type, language):
+    """Load previously saved progress"""
+    autosave_file = os.path.join(AUTOSAVE_DIR, f'{annotator_id}_{task_type}_{language}.json')
+
+    if os.path.exists(autosave_file):
+        try:
+            with open(autosave_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def save_progress(annotator_id, task_type, language, progress_data):
+    """Auto-save progress - merges with existing data to avoid overwriting"""
+    autosave_file = os.path.join(AUTOSAVE_DIR, f'{annotator_id}_{task_type}_{language}.json')
+
+    # Load existing progress
+    existing_data = {}
+    if os.path.exists(autosave_file):
+        try:
+            with open(autosave_file, 'r', encoding='utf-8') as f:
+                existing_data = json.load(f)
+        except:
+            existing_data = {}
+
+    # Merge new data with existing data
+    # This ensures we don't overwrite previous examples
+    merged_data = {**existing_data, **progress_data}
+
+    with open(autosave_file, 'w', encoding='utf-8') as f:
+        json.dump(merged_data, f, ensure_ascii=False, indent=2)
+
+def save_batch(annotator_id, task_type, language, annotations):
+    """Save completed batch"""
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+    if task_type == 'judgment':
+        output_file = os.path.join(JUDGMENT_DIR, language, f'{annotator_id}_{timestamp}.json')
+    else:
+        output_file = os.path.join(WRITING_DIR, language, f'{annotator_id}_{timestamp}.json')
+
+    with open(output_file, 'w', encoding='utf-8') as f:
+        json.dump(annotations, f, ensure_ascii=False, indent=2)
+
+    return output_file
+
+@app.route('/')
+def index():
+    """Main landing page"""
+    return render_template('index.html', languages=LANGUAGES)
+
+@app.route('/annotate', methods=['POST'])
+def start_annotation():
+    """Start annotation session"""
+    annotator_id = request.form.get('annotator_id', '').strip()
+    task_type = request.form.get('task_type')
+    language = request.form.get('language')
+
+    if not annotator_id:
+        return render_template('index.html', languages=LANGUAGES,
+                               error='Please enter your annotator ID')
+
+    if not task_type or not language:
+        return render_template('index.html', languages=LANGUAGES,
+                               error='Please select both task type and language')
+
+    examples = load_examples(task_type, language)
+    if not examples:
+        return render_template('index.html', languages=LANGUAGES,
+                               error=f'No examples found for {language} in {task_type} task')
+
+    progress = load_progress(annotator_id, task_type, language)
+
+    return redirect(url_for('annotate_task',
+                           task_type=task_type,
+                           language=language,
+                           annotator_id=annotator_id))
+
+@app.route('/annotate/<task_type>/<language>')
+def annotate_task(task_type, language):
+    """Annotation interface"""
+    annotator_id = request.args.get('annotator_id')
+    example_idx = request.args.get('example_idx', 0, type=int)
+
+    examples = load_examples(task_type, language)
+    progress = load_progress(annotator_id, task_type, language)
+
+    if example_idx >= len(examples):
+        example_idx = 0
+
+    current_example = examples[example_idx]
+
+    if task_type == 'judgment':
+        return render_template('judgment.html',
+                             example=current_example,
+                             example_idx=example_idx,
+                             total_examples=len(examples),
+                             annotator_id=annotator_id,
+                             task_type=task_type,
+                             language=language,
+                             progress=progress)
+    else:
+        return render_template('writing.html',
+                             example=current_example,
+                             example_idx=example_idx,
+                             total_examples=len(examples),
+                             annotator_id=annotator_id,
+                             task_type=task_type,
+                             language=language,
+                             progress=progress)
+
+@app.route('/api/save_progress', methods=['POST'])
+def api_save_progress():
+    """API endpoint for auto-saving"""
+    data = request.json
+
+    annotator_id = data.get('annotator_id')
+    task_type = data.get('task_type')
+    language = data.get('language')
+    annotations = data.get('annotations', {})
+
+    save_progress(annotator_id, task_type, language, annotations)
+
+    return jsonify({'status': 'success'})
+
+@app.route('/api/submit_batch', methods=['POST'])
+def api_submit_batch():
+    """API endpoint for submitting batch"""
+    data = request.json
+
+    annotator_id = data.get('annotator_id')
+    task_type = data.get('task_type')
+    language = data.get('language')
+    annotations = data.get('annotations', {})
+
+    output_file = save_batch(annotator_id, task_type, language, annotations)
+
+    autosave_file = os.path.join(AUTOSAVE_DIR, f'{annotator_id}_{task_type}_{language}.json')
+    if os.path.exists(autosave_file):
+        os.remove(autosave_file)
+
+    return jsonify({
+        'status': 'success',
+        'output_file': output_file,
+        'annotations_count': len(annotations)
+    })
+
+# Vercel serverless handler
+handler = app
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080, debug=True)

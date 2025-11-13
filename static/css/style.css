@@ -1,0 +1,406 @@
+/* Custom styles for Cultural Alignment Annotation Platform */
+
+body {
+    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f8f9fa;
+}
+
+.display-4 {
+    font-weight: 700;
+}
+
+.form-control-lg, .form-select-lg {
+    font-size: 1.1rem;
+    padding: 0.8rem 1rem;
+}
+
+.form-select[multiple],
+.form-select[size] {
+    height: auto;
+    min-height: 200px;
+    background-image: none;
+    padding: 0;
+}
+
+.form-select[multiple] option {
+    padding: 10px 15px;
+    border-bottom: 1px solid #dee2e6;
+    transition: all 0.2s ease;
+}
+
+.form-select[multiple] option:hover {
+    background-color: #e3f2fd;
+}
+
+.form-select[multiple] option:checked {
+    background-color: #1976d2;
+    color: white;
+}
+
+.form-check {
+    transition: all 0.2s ease;
+}
+
+.form-check:hover {
+    background-color: #f8f9fa;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Progress bar */
+.progress {
+    height: 30px;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Card styles */
+.card {
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+}
+
+.card-header {
+    border-bottom: none;
+    font-weight: 600;
+}
+
+/* Completion boxes */
+.completion-box {
+    border-left: 4px solid #007bff;
+    background-color: #f8f9fa;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.completion-box:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.completion-box.chosen {
+    border-left-color: #28a745;
+    background-color: #e8f5e9;
+}
+
+.completion-box.rejected {
+    border-left-color: #dc3545;
+    background-color: #ffebee;
+}
+
+/* Completion text */
+.completion-text {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: #212529;
+    margin-bottom: 10px;
+}
+
+.completion-model {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Judgment buttons */
+.judgment-btn-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.btn-judgment-yes,
+.btn-judgment-no {
+    min-width: 120px;
+    font-weight: 600;
+    padding: 14px 28px;
+    font-size: 1.1rem;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    border: 3px solid #dee2e6;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Default unselected state - Gray */
+.btn-judgment-yes:not(.active) {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+    color: #6c757d;
+}
+
+.btn-judgment-no:not(.active) {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+    color: #6c757d;
+}
+
+/* Hover effect for unselected */
+.btn-judgment-yes:not(.active):hover {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+.btn-judgment-no:not(.active):hover {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+/* Selected YES state - Green */
+.btn-judgment-yes.active {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+    transform: scale(1.05);
+}
+
+.btn-judgment-yes.active:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+/* Selected NO state - Red */
+.btn-judgment-no.active {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+    transform: scale(1.05);
+}
+
+.btn-judgment-no.active:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+/* Click animation */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7);
+    }
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+    }
+}
+
+.btn-judgment-yes.clicked,
+.btn-judgment-no.clicked {
+    animation: pulse 0.5s ease-in-out;
+}
+
+/* Icon animation */
+.btn-judgment-yes i,
+.btn-judgment-no i {
+    transition: transform 0.3s ease;
+}
+
+.btn-judgment-yes.active i,
+.btn-judgment-no.active i {
+    transform: scale(1.2);
+}
+
+/* Container styling for answered sections */
+#chosen_alignment_container.answered,
+#rejected_misalignment_0_container.answered,
+#rejected_misalignment_1_container.answered,
+#rejected_misalignment_2_container.answered {
+    background-color: #e8f5e8 !important;
+    border: 2px solid #28a745;
+    position: relative;
+}
+
+#chosen_alignment_container.answered::after,
+#rejected_misalignment_0_container.answered::after,
+#rejected_misalignment_1_container.answered::after,
+#rejected_misalignment_2_container.answered::after {
+    content: "✓ Answered";
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: #28a745;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Writing textarea */
+.writing-textarea {
+    min-height: 200px;
+    font-size: 1.1rem;
+    line-height: 1.7;
+    padding: 20px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.writing-textarea:focus {
+    border-color: #1976d2;
+    box-shadow: 0 0 0 0.25rem rgba(25, 118, 210, 0.25);
+}
+
+/* Navigation buttons */
+.btn-nav {
+    font-weight: 600;
+    padding: 12px 24px;
+    font-size: 1rem;
+    border-radius: 50px;
+    transition: all 0.2s ease;
+}
+
+.btn-nav:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Confidence selector */
+.confidence-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.confidence-btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 12px;
+    border: 2px solid #dee2e6;
+    background-color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.confidence-btn:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-2px);
+}
+
+.confidence-btn.active {
+    border-color: #1976d2;
+    background-color: #e3f2fd;
+    box-shadow: 0 4px 8px rgba(25, 118, 210, 0.2);
+}
+
+.confidence-btn .label {
+    display: block;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.confidence-btn .desc {
+    display: block;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+/* Auto-save indicator */
+.autosave-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 12px 24px;
+    background-color: #4caf50;
+    color: white;
+    border-radius: 50px;
+    font-weight: 600;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    z-index: 9999;
+}
+
+.autosave-indicator.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Success animation */
+.submit-success {
+    animation: pulse 0.5s ease-in-out;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    .card-body {
+        padding: 20px !important;
+    }
+
+    .completion-box {
+        padding: 15px;
+    }
+
+    .judgment-btn-group {
+        flex-direction: column;
+    }
+
+    .btn-judgment-yes,
+    .btn-judgment-no {
+        width: 100%;
+    }
+}
+
+/* Loading spinner */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+}
+
+/* Hide elements */
+.hidden {
+    display: none !important;
+}
+
+/* Fade transitions */
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}

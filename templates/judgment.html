@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Judgment Task - Example {{ example_idx + 1 }}/{{ total_examples }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}?v=1.0" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="fas fa-globe-americas me-2"></i>
+                Cultural Alignment Platform
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text text-white me-3">
+                    <i class="fas fa-user me-1"></i>
+                    {{ annotator_id }}
+                </span>
+                <span class="navbar-text text-white">
+                    <i class="fas fa-language me-1"></i>
+                    {{ language }}
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="mb-0">
+                                <i class="fas fa-tasks me-2 text-primary"></i>
+                                Progress: Example {{ example_idx + 1 }} of {{ total_examples }}
+                            </h4>
+                            <a href="/" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-home me-1"></i>
+                                Back to Home
+                            </a>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-success fw-bold"
+                                 role="progressbar"
+                                 style="width: {{ ((example_idx + 1) / total_examples) * 100 }}%">
+                                {{ ((example_idx + 1) / total_examples) * 100 | round(1) }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card shadow-lg mb-4">
+                    <div class="card-header bg-primary text-white py-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-clipboard-question fs-2 me-3"></i>
+                            <div>
+                                <h2 class="mb-0">Question / Prompt</h2>
+                                <small class="text-light">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Read this carefully before reviewing the answers below
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-5">
+                        <div class="alert alert-light border-2">
+                            <h5 class="text-primary">
+                                <i class="fas fa-tag me-2"></i>
+                                <strong>Topic:</strong> {{ example.category | title }}
+                            </h5>
+                            <h5 class="text-primary">
+                                <i class="fas fa-flag me-2"></i>
+                                <strong>Culture:</strong> {{ example.country }}
+                            </h5>
+                        </div>
+                        <div class="p-4 bg-light rounded-3">
+                            <h4 class="mb-3 text-dark">
+                                <i class="fas fa-quote-left me-2 text-primary"></i>
+                                Prompt
+                            </h4>
+                            <p class="lead fs-5 mb-0" style="line-height: 1.7;">
+                                {{ example.prompt }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <style>
+                /* ANSWERED INDICATOR - Force important to override everything */
+                #chosen_alignment_container.answered,
+                #rejected_misalignment_0_container.answered,
+                #rejected_misalignment_1_container.answered,
+                #rejected_misalignment_2_container.answered {
+                    background-color: #e8f5e9 !important;
+                    border: 3px solid #28a745 !important;
+                    position: relative !important;
+                    border-radius: 12px !important;
+                    transition: all 0.3s ease !important;
+                }
+
+                #chosen_alignment_container.answered::after,
+                #rejected_misalignment_0_container.answered::after,
+                #rejected_misalignment_1_container.answered::after,
+                #rejected_misalignment_2_container.answered::after {
+                    content: "✓ Answered" !important;
+                    position: absolute !important;
+                    top: 15px !important;
+                    right: 20px !important;
+                    background: #28a745 !important;
+                    color: white !important;
+                    padding: 6px 15px !important;
+                    border-radius: 20px !important;
+                    font-size: 0.9rem !important;
+                    font-weight: 600 !important;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.1) !important;
+                    animation: fadeIn 0.5s ease !important;
+                }
+
+                /* Ensure the base container has position relative */
+                #chosen_alignment_container,
+                #rejected_misalignment_0_container,
+                #rejected_misalignment_1_container,
+                #rejected_misalignment_2_container {
+                    position: relative !important;
+                }
+
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                </style>
+
+                <div class="card shadow-lg mb-4">
+                    <div class="card-header bg-success text-white py-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-thumbs-up fs-2 me-3"></i>
+                            <div>
+                                <h2 class="mb-0">Chosen Completion</h2>
+                                <small class="text-light">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    This is the AI's selected answer
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="completion-box chosen">
+                            <div class="completion-text">
+                                {{ example.chosen[0] }}
+                            </div>
+                            <div class="completion-model">
+                                <i class="fas fa-robot me-1"></i>
+                                Generated by: {{ example.chosen_model[0] }}
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-4 bg-light rounded-3 text-center" id="chosen_alignment_container">
+                            <h4 class="mb-3 text-primary">
+                                <i class="fas fa-question-circle me-2"></i>
+                                Is this completion culturally aligned?
+                            </h4>
+                            <div class="judgment-btn-group">
+                                <button type="button" class="btn btn-judgment-yes" onclick="selectJudgment('chosen_alignment', true)" id="chosen_yes">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    YES
+                                </button>
+                                <button type="button" class="btn btn-judgment-no" onclick="selectJudgment('chosen_alignment', false)" id="chosen_no">
+                                    <i class="fas fa-times-circle me-1"></i>
+                                    NO
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                Does this answer correctly reflect {{ example.country }} culture?
+                            </small>
+                        </div>
+
+                        <style>
+                        /* SIMPLE WORKING VERSION - This will override everything */
+                        .btn-judgment-yes, .btn-judgment-no {
+                            min-width: 120px;
+                            font-weight: 600;
+                            padding: 14px 28px;
+                            font-size: 1.1rem;
+                            border-radius: 50px;
+                            transition: all 0.3s ease !important;
+                            border: 3px solid #ccc !important;
+                            background-color: #e9ecef !important;
+                            color: #6c757d !important;
+                        }
+
+                        .btn-judgment-yes.active {
+                            background-color: #28a745 !important;
+                            border-color: #28a745 !important;
+                            color: white !important;
+                            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4) !important;
+                            transform: scale(1.05) !important;
+                        }
+
+                        .btn-judgment-no.active {
+                            background-color: #dc3545 !important;
+                            border-color: #dc3545 !important;
+                            color: white !important;
+                            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4) !important;
+                            transform: scale(1.05) !important;
+                        }
+                        </style>
+                    </div>
+                </div>
+
+                <div class="card shadow-lg mb-4">
+                    <div class="card-header bg-danger text-white py-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-thumbs-down fs-2 me-3"></i>
+                            <div>
+                                <h2 class="mb-0">Rejected Completions</h2>
+                                <small class="text-light">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    These are alternative AI answers that were NOT selected
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        {% for i in range(example.rejected|length) %}
+                        <div class="completion-box rejected">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge bg-danger fs-6">Rejected #{{ i + 1 }}</span>
+                            </div>
+                            <div class="completion-text">
+                                {{ example.rejected[i] }}
+                            </div>
+                            <div class="completion-model">
+                                <i class="fas fa-robot me-1"></i>
+                                Generated by: {{ example.rejected_model[i] }}
+                            </div>
+                        </div>
+
+                        <div class="mt-3 p-3 bg-light rounded-3 text-center mb-4" id="rejected_misalignment_{{ i }}_container">
+                            <h5 class="mb-2 text-primary">
+                                <i class="fas fa-question-circle me-1"></i>
+                                Does this show cultural misunderstanding?
+                            </h5>
+                            <div class="judgment-btn-group">
+                                <button type="button" class="btn btn-judgment-yes" onclick="selectJudgment('rejected_misalignment_{{ i }}', true)" id="rejected_{{ i }}_yes">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    YES
+                                </button>
+                                <button type="button" class="btn btn-judgment-no" onclick="selectJudgment('rejected_misalignment_{{ i }}', false)" id="rejected_{{ i }}_no">
+                                    <i class="fas fa-times-circle me-1"></i>
+                                    NO
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-1">
+                                Are there cultural errors or stereotypes?
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="card shadow-lg mb-4">
+                    <div class="card-header bg-light py-4">
+                        <h3 class="mb-0 text-primary">
+                            <i class="fas fa-sliders-h me-2"></i>
+                            Additional Information
+                        </h3>
+                    </div>
+                    <div class="card-body p-5">
+                        <div class="mb-4">
+                            <label class="form-label fs-5 fw-semibold">
+                                <i class="fas fa-confidence me-2"></i>
+                                How confident are you in your judgments?
+                                <span class="badge bg-danger ms-2">Required</span>
+                            </label>
+                            <div class="confidence-selector">
+                                <div class="confidence-btn" onclick="selectConfidence('low')" id="conf_low">
+                                    <span class="label">Low</span>
+                                    <span class="desc">Unsure about this culture</span>
+                                </div>
+                                <div class="confidence-btn" onclick="selectConfidence('medium')" id="conf_medium">
+                                    <span class="label">Medium</span>
+                                    <span class="desc">Somewhat familiar</span>
+                                </div>
+                                <div class="confidence-btn" onclick="selectConfidence('high')" id="conf_high">
+                                    <span class="label">High</span>
+                                    <span class="desc">Very familiar with this culture</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="notes" class="form-label fs-5 fw-semibold">
+                                <i class="fas fa-sticky-note me-2"></i>
+                                Notes (Optional)
+                            </label>
+                            <textarea class="form-control writing-textarea" id="notes" rows="4"
+                                      placeholder="Add any additional thoughts, explanations, or observations about this example..."></textarea>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Use this space to explain your reasoning or note any uncertainties.
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info border-0">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-clock me-2"></i>
+                                Time (Optional)
+                            </h5>
+                            <p class="mb-2">How many minutes did you spend on this example?</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="time_minutes" min="0" max="60"
+                                               placeholder="e.g., 5">
+                                        <span class="input-group-text">minutes</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-4 gap-3">
+                    {% if example_idx > 0 %}
+                    <button type="button" class="btn btn-outline-secondary btn-nav"
+                            onclick="previousExample()">
+                        <i class="fas fa-arrow-left me-1"></i>
+                        Previous Example
+                    </button>
+                    {% else %}
+                    <div></div>
+                    {% endif %}
+
+                    <div class="text-center">
+                        <small class="text-muted" id="autosave_status">
+                            <i class="fas fa-save me-1"></i>
+                            Progress auto-saved
+                        </small>
+                    </div>
+
+                    <button type="button" class="btn btn-success btn-nav"
+                            onclick="nextExample()" id="nextBtn">
+                        {% if example_idx + 1 < total_examples %}
+                        <span id="nextBtnText">Next Example</span>
+                        <i class="fas fa-arrow-right ms-1"></i>
+                        {% else %}
+                        <span id="nextBtnText">Submit Batch</span>
+                        <i class="fas fa-check-circle ms-1"></i>
+                        {% endif %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="autosave-indicator" id="autosaveIndicator">
+        <i class="fas fa-save me-1"></i>
+        Auto-saving...
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/judgment.js') }}"></script>
+    <script>
+        const annotatorId = "{{ annotator_id }}";
+        const taskType = "{{ task_type }}";
+        const language = "{{ language }}";
+        const exampleId = "{{ example.id }}";
+        const exampleIdx = {{ example_idx }};
+        const totalExamples = {{ total_examples }};
+        const progress = {{ progress | tojson | safe }};
+
+        // SIMPLIFIED VERSION FOR TESTING
+        function selectJudgment(field, value) {
+            console.log("=== SIMPLIFIED BUTTON CLICK ===");
+            console.log("Field:", field, "Value:", value);
+
+            annotations[field] = value;
+
+            let yesBtn, noBtn, container;
+            if (field === 'chosen_alignment') {
+                yesBtn = document.getElementById('chosen_yes');
+                noBtn = document.getElementById('chosen_no');
+                container = document.getElementById('chosen_alignment_container');
+            } else if (field === 'rejected_misalignment_0') {
+                yesBtn = document.getElementById('rejected_0_yes');
+                noBtn = document.getElementById('rejected_0_no');
+                container = document.getElementById('rejected_misalignment_0_container');
+            } else if (field === 'rejected_misalignment_1') {
+                yesBtn = document.getElementById('rejected_1_yes');
+                noBtn = document.getElementById('rejected_1_no');
+                container = document.getElementById('rejected_misalignment_1_container');
+            } else if (field === 'rejected_misalignment_2') {
+                yesBtn = document.getElementById('rejected_2_yes');
+                noBtn = document.getElementById('rejected_2_no');
+                container = document.getElementById('rejected_misalignment_2_container');
+            }
+
+            // Remove active from both
+            yesBtn.classList.remove('active');
+            noBtn.classList.remove('active');
+
+            // Add active to selected
+            if (value === true) {
+                yesBtn.classList.add('active');
+                console.log("YES is now ACTIVE");
+            } else {
+                noBtn.classList.add('active');
+                console.log("NO is now ACTIVE");
+            }
+
+            // Add answered indicator to container
+            if (container) {
+                container.classList.add('answered');
+                console.log("Container marked as answered:", field);
+            }
+
+            console.log("YES classes:", yesBtn.className);
+            console.log("NO classes:", noBtn.className);
+        }
+
+        function initializeProgress() {
+            if (progress && progress[exampleId]) {
+                const saved = progress[exampleId];
+                if (saved.chosen_alignment !== undefined) {
+                    selectJudgment('chosen_alignment', saved.chosen_alignment);
+                }
+                for (let i = 0; i < 3; i++) {
+                    if (saved['rejected_misalignment_' + i] !== undefined) {
+                        selectJudgment('rejected_misalignment_' + i, saved['rejected_misalignment_' + i]);
+                    }
+                }
+                if (saved.confidence) {
+                    selectConfidence(saved.confidence);
+                }
+                if (saved.notes) {
+                    document.getElementById('notes').value = saved.notes;
+                }
+                if (saved.annotation_time_seconds) {
+                    document.getElementById('time_minutes').value = Math.max(1, Math.round(saved.annotation_time_seconds / 60));
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeProgress();
+            updateAnsweredIndicators();
+        });
+
+        let autoSaveTimer = null;
+
+        function triggerAutoSave() {
+            if (autoSaveTimer) {
+                clearTimeout(autoSaveTimer);
+            }
+            autoSaveTimer = setTimeout(autoSave, 2000);
+        }
+
+        document.getElementById('notes').addEventListener('input', triggerAutoSave);
+        document.getElementById('time_minutes').addEventListener('input', triggerAutoSave);
+    </script>
+</body>
+</html>
