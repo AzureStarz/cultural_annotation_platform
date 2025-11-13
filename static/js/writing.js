@@ -207,6 +207,61 @@ function submitBatch() {
     });
 }
 
+function downloadAnnotationsFromAPI() {
+    // Disable button during download
+    const downloadBtn = document.getElementById('downloadBtn');
+    downloadBtn.disabled = true;
+    downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Preparing...';
+
+    // Prepare annotation data
+    const annotationData = {
+        annotator_id: annotatorId,
+        task_type: taskType,
+        language: language,
+        annotations: progress
+    };
+
+    // Call API to prepare download
+    fetch('/api/download_annotations', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(annotationData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Download the file
+            downloadAnnotations(data.data, data.filename);
+
+            // Re-enable button
+            downloadBtn.disabled = false;
+            downloadBtn.innerHTML = '<i class="fas fa-download me-1"></i> Download';
+        } else {
+            console.error('Download preparation failed:', data.message);
+            alert('Failed to prepare download: ' + data.message);
+
+            // Re-enable button
+            downloadBtn.disabled = false;
+            downloadBtn.innerHTML = '<i class="fas fa-download me-1"></i> Download';
+        }
+    })
+    .catch(error => {
+        console.error('Download failed:', error);
+        alert('An error occurred while preparing the download. Please try again.');
+
+        // Re-enable button
+        downloadBtn.disabled = false;
+        downloadBtn.innerHTML = '<i class="fas fa-download me-1"></i> Download';
+    });
+}
+
+// For backward compatibility with existing HTML onclick handlers
+function downloadAnnotations() {
+    downloadAnnotationsFromAPI();
+}
+
 function downloadAnnotations(annotations, filename) {
     // Create a Blob with the JSON data
     const dataStr = JSON.stringify(annotations, null, 2);
