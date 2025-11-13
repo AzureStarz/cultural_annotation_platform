@@ -296,7 +296,7 @@ function submitBatch() {
     });
 }
 
-function downloadAnnotationsFromAPI() {
+function handleDownloadClick() {
     // Disable button during download
     const downloadBtn = document.getElementById('downloadBtn');
     downloadBtn.disabled = true;
@@ -322,7 +322,7 @@ function downloadAnnotationsFromAPI() {
     .then(data => {
         if (data.status === 'success') {
             // Download the file
-            downloadAnnotations(data.data, data.filename);
+            downloadFileToPC(data.data, data.filename);
 
             // Re-enable button
             downloadBtn.disabled = false;
@@ -346,12 +346,7 @@ function downloadAnnotationsFromAPI() {
     });
 }
 
-// For backward compatibility with existing HTML onclick handlers
-function downloadAnnotations() {
-    downloadAnnotationsFromAPI();
-}
-
-function downloadAnnotations(annotations, filename) {
+function downloadFileToPC(annotations, filename) {
     // Create a Blob with the JSON data
     const dataStr = JSON.stringify(annotations, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });

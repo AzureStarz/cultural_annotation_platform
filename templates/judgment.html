@@ -347,24 +347,25 @@
                     </div>
 
                     <div class="d-flex gap-2">
-                        {% if example_idx + 1 == total_examples %}
                         <button type="button" class="btn btn-info btn-nav"
-                                onclick="downloadAnnotations()" id="downloadBtn"
-                                title="Download annotations to your PC">
+                                onclick="handleDownloadClick()" id="downloadBtn"
+                                title="Download current annotations to your PC">
                             <i class="fas fa-download me-1"></i>
                             Download
                         </button>
-                        {% endif %}
+                        {% if example_idx + 1 == total_examples %}
                         <button type="button" class="btn btn-success btn-nav"
                                 onclick="nextExample()" id="nextBtn">
-                            {% if example_idx + 1 < total_examples %}
-                            <span id="nextBtnText">Next Example</span>
-                            <i class="fas fa-arrow-right ms-1"></i>
-                            {% else %}
                             <span id="nextBtnText">Submit Batch</span>
                             <i class="fas fa-check-circle ms-1"></i>
-                            {% endif %}
                         </button>
+                        {% else %}
+                        <button type="button" class="btn btn-success btn-nav"
+                                onclick="nextExample()" id="nextBtn">
+                            <span id="nextBtnText">Next Example</span>
+                            <i class="fas fa-arrow-right ms-1"></i>
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
             </div>

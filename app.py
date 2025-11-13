@@ -242,21 +242,26 @@ def api_download_annotations():
     if not annotator_id or not task_type or not language:
         return jsonify({'status': 'error', 'message': 'Missing required parameters'}), 400
 
-    # Create the annotation data structure
+    # Calculate progress info
+    completed_count = len(annotations)
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+    # Create the annotation data structure
     annotation_data = {
         'annotator_id': annotator_id,
         'task_type': task_type,
         'language': language,
         'timestamp': timestamp,
+        'download_info': f'Includes {completed_count} annotated examples',
         'annotations': annotations,
-        'annotations_count': len(annotations)
+        'annotations_count': completed_count
     }
 
     return jsonify({
         'status': 'success',
         'data': annotation_data,
-        'filename': f'{annotator_id}_{task_type}_{language}_{timestamp}.json'
+        'filename': f'{annotator_id}_{task_type}_{language}_{timestamp}.json',
+        'progress': f'Includes {completed_count} annotated examples'
     })
 
 # Vercel serverless handler

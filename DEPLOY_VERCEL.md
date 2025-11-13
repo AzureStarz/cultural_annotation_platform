@@ -62,8 +62,17 @@ The following changes were made to support Vercel deployment:
 
 In serverless environments, these writes may not persist across function invocations. For production use:
 
-1. **Short-term solution**: The app will work within a single session, but autosave data may not persist across server restarts
-2. **Long-term solution**: Consider integrating with a database (e.g., Vercel Postgres, MongoDB Atlas) for persistent storage
+1. **Download Feature**: Annotators can download their annotations at any time using the **Download** button. This allows them to save their work to their local PC.
+2. **Short-term solution**: The app will work within a single session, but autosave data may not persist across server restarts
+3. **Long-term solution**: Consider integrating with a database (e.g., Vercel Postgres, MongoDB Atlas) for persistent storage
+
+### Download Annotations Feature
+
+Annotators can download their annotations at any progress:
+- **Download button** is available on every example page (not just the final page)
+- Downloads all currently completed annotations
+- Filename format: `{annotator_id}_{task_type}_{language}_{timestamp}.json`
+- Perfect for backing up work before server restarts
 
 ### Environment Variables
 
