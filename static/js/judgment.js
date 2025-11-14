@@ -2,7 +2,7 @@
 // Cultural Annotation Platform - Judgment Task
 // ============================================================================
 // Storage System: Browser LocalStorage
-// Environment: Vercel (Serverless - No file system access)
+// Environment: Vercel Static Hosting (No Python backend)
 //
 // Data Flow:
 // 1. Annotations stored in browser's LocalStorage (no server needed)
@@ -10,10 +10,20 @@
 // 3. Download button exports all annotations as JSON file
 // ============================================================================
 
+// Global variables (initialized after DOM load)
+let annotatorId = null;
+let taskType = null;
+let language = null;
+let exampleId = null;
+let exampleIdx = 0;
+let totalExamples = 0;
+let currentExample = null;
+
 // Global annotation data storage (in-memory cache)
 const annotations = {};      // Current example's annotations
 let currentConfidence = null; // Current confidence level
 let startTime = Date.now();   // Start time for tracking
+let storage = null;           // Storage instance
 
 // ============================================================================
 // STORAGE MANAGEMENT - LocalStorage based
@@ -464,68 +474,188 @@ function showCompletionMessage() {
 // INITIALIZATION
 // ============================================================================
 
-function initializeApp() {
-    console.log('=== Initializing Cultural Annotation App ===');
-    console.log('Annotator ID:', annotatorId);
-    console.log('Task Type:', taskType);
-    console.log('Language:', language);
-    console.log('Example ID:', exampleId);
+async function initializeApp() {
+    console.log('=== Initializing Cultural Annotation App (Static) ===');
 
-    // Initialize storage system
-    storage = new AnnotationStorage(annotatorId, taskType, language);
+    try {
+        // Get parameters from URL
+        const params = {
+            annotatorId: URLParams.get('annotator_id'),
+            language: URLParams.get('language'),
+            taskType: getTaskTypeFromURL(),
+            exampleIdx: parseInt(URLParams.get('example_idx') || '0')
+        };
 
-    // Load saved progress for current example
-    const savedData = storage.load(exampleId);
-    if (savedData) {
-        console.log('Found saved data for this example:', savedData);
-
-        // Restore annotations
-        if (savedData.chosen_alignment !== undefined) {
-            selectJudgment('chosen_alignment', savedData.chosen_alignment);
+        if (!params.annotatorId || !params.language) {
+            console.error('Missing required parameters:', params);
+            alert('Missing required parameters. Redirecting to home page.');
+            window.location.href = 'index_static.html';
+            return;
         }
-        for (let i = 0; i < 3; i++) {
-            if (savedData[`rejected_misalignment_${i}`] !== undefined) {
-                selectJudgment(`rejected_misalignment_${i}`, savedData[`rejected_misalignment_${i}`]);
+
+        // Set global variables
+        annotatorId = params.annotatorId;
+        language = params.language;
+        taskType = params.taskType;
+        exampleIdx = params.exampleIdx;
+
+        console.log('Parameters loaded:', { annotatorId, language, taskType, exampleIdx });
+
+        // Load current example
+        currentExample = await DataLoader.loadExample(taskType, language, exampleIdx);
+        if (!currentExample) {
+            alert('Failed to load examples. Please check your data files.');
+            window.location.href = 'index_static.html';
+            return;
+        }
+
+        exampleId = currentExample.id;
+        const examples = await DataLoader.loadExamples(taskType, language);
+        totalExamples = examples.length;
+
+        console.log(`Loaded example ${exampleIdx + 1}/${totalExamples}:`, currentExample.id);
+
+        // Render the page content
+        await renderPageContent();
+
+        // Initialize storage
+        storage = new AnnotationStorage(annotatorId, taskType, language);
+
+        // Load saved progress for current example
+        const savedData = storage.load(exampleId);
+        if (savedData) {
+            console.log('Found saved data for this example:', savedData);
+
+            // Restore annotations
+            if (savedData.chosen_alignment !== undefined) {
+                selectJudgment('chosen_alignment', savedData.chosen_alignment);
+            }
+            for (let i = 0; i < 3; i++) {
+                if (savedData[`rejected_misalignment_${i}`] !== undefined) {
+                    selectJudgment(`rejected_misalignment_${i}`, savedData[`rejected_misalignment_${i}`]);
+                }
+            }
+
+            // Restore confidence
+            if (savedData.confidence) {
+                selectConfidence(savedData.confidence);
+            }
+
+            // Restore notes
+            if (savedData.notes) {
+                document.getElementById('notes').value = savedData.notes;
+            }
+
+            // Restore time
+            if (savedData.annotation_time_seconds) {
+                document.getElementById('time_minutes').value =
+                    Math.max(1, Math.round(savedData.annotation_time_seconds / 60));
             }
         }
 
-        // Restore confidence
-        if (savedData.confidence) {
-            selectConfidence(savedData.confidence);
-        }
+        // Update UI
+        updateAnsweredIndicators();
+        updateNextButton();
 
-        // Restore notes
-        if (savedData.notes) {
-            document.getElementById('notes').value = savedData.notes;
-        }
+        // Show initial stats
+        const stats = storage.getStats();
+        console.log(`Total annotations in storage: ${stats.total}`);
 
-        // Restore time
-        if (savedData.annotation_time_seconds) {
-            document.getElementById('time_minutes').value =
-                Math.max(1, Math.round(savedData.annotation_time_seconds / 60));
-        }
+        // Auto-save every 30 seconds
+        setInterval(() => {
+            if (Object.keys(annotations).length > 0) {
+                saveCurrentToStorage();
+            }
+        }, 30000);
+
+        // Update next button every second
+        setInterval(updateNextButton, 1000);
+
+        console.log('=== App Initialization Complete ===');
+
+    } catch (error) {
+        console.error('Initialization error:', error);
+        alert(`Failed to initialize app: ${error.message}`);
     }
-
-    // Update UI
-    updateAnsweredIndicators();
-    updateNextButton();
-
-    // Show initial stats
-    const stats = storage.getStats();
-    console.log(`Total annotations in storage: ${stats.total}`);
-
-    // Auto-save every 30 seconds
-    setInterval(() => {
-        if (Object.keys(annotations).length > 0) {
-            saveCurrentToStorage();
-        }
-    }, 30000);
-
-    // Update next button every second
-    setInterval(updateNextButton, 1000);
-
-    console.log('=== App Initialization Complete ===');
 }
 
-// Wait for DOM to be fully loaded
-document.addEventListener('DOMContentLoaded', initializeApp);
+// Helper function to render page content
+async function renderPageContent() {
+    // This function should be defined in the HTML file or we use template literals
+    const progressPercent = ((exampleIdx + 1) / totalExamples) * 100;
+    const progressBarHtml = `
+        <h4 class="mb-0">
+            <i class="fas fa-tasks me-2 text-primary"></i>
+            Progress: Example ${exampleIdx + 1} of ${totalExamples}
+        </h4>
+        <div class="progress mt-2" style="height: 25px;">
+            <div class="progress-bar bg-success fw-bold" role="progressbar"
+                 style="width: ${progressPercent}%">
+                ${progressPercent.toFixed(1)}%
+            </div>
+        </div>
+    `;
+
+    // Update progress section
+    const progressHeader = document.querySelector('.card-header .row .col-12 .d-flex');
+    if (progressHeader) {
+        progressHeader.innerHTML = progressBarHtml;
+    }
+
+    // Update example content (prompt, chosen, rejected, etc.)
+    // This would need to be more comprehensive in the actual HTML
+    updateExampleContent();
+}
+
+function updateExampleContent() {
+    // Update all dynamic content on the page
+    const elements = {
+        prompt: document.querySelector('[data-field="prompt"]'),
+        category: document.querySelector('[data-field="category"]'),
+        country: document.querySelector('[data-field="country"]'),
+        chosenText: document.querySelector('[data-field="chosen_text"]'),
+        chosenModel: document.querySelector('[data-field="chosen_model"]')
+    };
+
+    if (elements.prompt && currentExample.prompt) {
+        elements.prompt.textContent = currentExample.prompt;
+    }
+    if (elements.category && currentExample.category) {
+        elements.category.textContent = currentExample.category;
+    }
+    if (elements.country && currentExample.country) {
+        elements.country.textContent = currentExample.country;
+    }
+    if (elements.chosenText && currentExample.chosen && currentExample.chosen[0]) {
+        elements.chosenText.textContent = currentExample.chosen[0];
+    }
+    if (elements.chosenModel && currentExample.chosen_model && currentExample.chosen_model[0]) {
+        elements.chosenModel.textContent = currentExample.chosen_model[0];
+    }
+
+    // Update rejected completions
+    for (let i = 0; i < 3; i++) {
+        const rejectedText = document.querySelector(`[data-field="rejected_text_${i}"]`);
+        const rejectedModel = document.querySelector(`[data-field="rejected_model_${i}"]`);
+
+        if (rejectedText && currentExample.rejected && currentExample.rejected[i]) {
+            rejectedText.textContent = currentExample.rejected[i];
+        }
+        if (rejectedModel && currentExample.rejected_model && currentExample.rejected_model[i]) {
+            rejectedModel.textContent = currentExample.rejected_model[i];
+        }
+    }
+}
+
+// Wait for DOM and then initialize
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing app...');
+    initializeApp();
+});
+
+// Also make functions globally available for onclick handlers
+window.previousExample = previousExample;
+window.nextExample = nextExample;
+window.selectJudgment = selectJudgment;
+window.selectConfidence = selectConfidence;
+window.handleDownloadClick = handleDownloadClick;

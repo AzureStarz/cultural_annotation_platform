@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cultural Annotation Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .hero-section {
+            padding: 80px 0;
+            color: white;
+            text-align: center;
+        }
+        .option-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            height: 100%;
+        }
+        .option-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2) !important;
+        }
+        .language-badge {
+            font-size: 0.9rem;
+            margin: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .language-badge:hover {
+            transform: scale(1.05);
+        }
+        .btn-nav {
+            padding: 12px 30px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+        .task-option {
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .task-option.selected {
+            border-color: #0d6efd;
+            background-color: #e7f1ff;
+        }
+        .language-option {
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .language-option.selected {
+            border-color: #198754;
+            background-color: #d1e7dd;
+        }
+        .progress-bar {
+            height: 30px;
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="index_static.html">
+                <i class="fas fa-globe-americas me-2"></i>
+                Cultural Annotation Platform
+            </a>
+        </div>
+    </nav>
+
+    <div class="hero-section">
+        <div class="container">
+            <h1 class="display-3 fw-bold mb-3">
+                <i class="fas fa-globe-americas me-3"></i>
+                Cultural Alignment Platform
+            </h1>
+            <p class="lead fs-4 mb-5">
+                Annotate cultural data for better AI understanding
+            </p>
+        </div>
+    </div>
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-primary text-white py-4">
+                        <h3 class="mb-0">
+                            <i class="fas fa-user-edit me-2"></i>
+                            Start Annotation Session
+                        </h3>
+                    </div>
+                    <div class="card-body p-5">
+                        <!-- Annotator ID -->
+                        <div class="mb-5">
+                            <label for="annotatorId" class="form-label fw-bold fs-5">
+                                <i class="fas fa-user-circle me-2"></i>
+                                Your Annotator ID
+                                <span class="badge bg-danger ms-2">Required</span>
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="annotatorId"
+                                   placeholder="Enter your unique identifier (e.g., your name or ID)"
+                                   style="font-size: 1.1rem;">
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                This identifies your annotations. Use the same ID to continue previous work.
+                            </div>
+                        </div>
+
+                        <!-- Task Type -->
+                        <div class="mb-5">
+                            <label class="form-label fw-bold fs-5">
+                                <i class="fas fa-tasks me-2"></i>
+                                Select Task Type
+                                <span class="badge bg-danger ms-2">Required</span>
+                            </label>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="card task-option p-4" data-task="judgment">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-balance-scale fs-2 text-primary me-3"></i>
+                                            <div>
+                                                <h5 class="mb-1">Judgment Task</h5>
+                                                <p class="text-muted mb-0 small">
+                                                    Evaluate AI-generated cultural completions (Yes/No judgments)
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card task-option p-4" data-task="writing">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-keyboard fs-2 text-success me-3"></i>
+                                            <div>
+                                                <h5 class="mb-1">Writing Task</h5>
+                                                <p class="text-muted mb-0 small">
+                                                    Write culturally-accurate completions yourself
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Language Selection -->
+                        <div class="mb-5">
+                            <label class="form-label fw-bold fs-5">
+                                <i class="fas fa-language me-2"></i>
+                                Select Language
+                                <span class="badge bg-danger ms-2">Required</span>
+                            </label>
+                            <div class="d-flex flex-wrap gap-2" id="languageContainer">
+                                <!-- Languages will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <!-- Start Button -->
+                        <div class="text-center mt-5">
+                            <button type="button" class="btn btn-success btn-lg btn-nav" id="startBtn" disabled>
+                                <i class="fas fa-play me-2"></i>
+                                Start Annotation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="card mt-5 border-0">
+                    <div class="card-header bg-info text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            How It Works
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <i class="fas fa-save fa-3x text-primary mb-3"></i>
+                                    <h5>Auto-Save</h5>
+                                    <p class="text-muted">Your work is automatically saved in your browser. Close and return anytime!</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <i class="fas fa-download fa-3x text-success mb-3"></i>
+                                    <h5>Download Anytime</h5>
+                                    <p class="text-muted">Download all your annotations as JSON file whenever you want.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <i class="fas fa-history fa-3x text-info mb-3"></i>
+                                    <h5>Resume Work</h5>
+                                    <p class="text-muted">Your previous annotations are restored when you use the same ID.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Configuration
+        const LANGUAGES = [
+            'Arabic', 'Chinese', 'English', 'German',
+            'Japanese', 'Korean', 'Russian',
+            'Spanish', 'Thai', 'Vietnamese'
+        ];
+
+        // State
+        let selectedTask = null;
+        let selectedLanguage = null;
+        let annotatorId = '';
+
+        // DOM Elements
+        const elements = {
+            annotatorId: document.getElementById('annotatorId'),
+            startBtn: document.getElementById('startBtn'),
+            languageContainer: document.getElementById('languageContainer')
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            populateLanguages();
+            setupEventListeners();
+            checkFormValidity();
+        });
+
+        function populateLanguages() {
+            elements.languageContainer.innerHTML = '';
+            LANGUAGES.forEach(language => {
+                const badge = document.createElement('span');
+                badge.className = 'badge language-badge bg-light text-dark p-3 border fs-5';
+                badge.textContent = language;
+                badge.dataset.language = language;
+                badge.style.cursor = 'pointer';
+                elements.languageContainer.appendChild(badge);
+            });
+        }
+
+        function setupEventListeners() {
+            // Task selection
+            document.querySelectorAll('.task-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.task-option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedTask = this.dataset.task;
+                    checkFormValidity();
+                });
+            });
+
+            // Language selection
+            elements.languageContainer.addEventListener('click', function(e) {
+                if (e.target.dataset.language) {
+                    document.querySelectorAll('.language-badge').forEach(b => b.classList.remove('selected'));
+                    e.target.classList.add('selected');
+                    selectedLanguage = e.target.dataset.language;
+                    checkFormValidity();
+                }
+            });
+
+            // Annotator ID input
+            elements.annotatorId.addEventListener('input', function() {
+                annotatorId = this.value.trim();
+                checkFormValidity();
+            });
+
+            // Start button
+            elements.startBtn.addEventListener('click', startAnnotation);
+        }
+
+        function checkFormValidity() {
+            const isValid = annotatorId.length > 0 && selectedTask && selectedLanguage;
+            elements.startBtn.disabled = !isValid;
+
+            if (isValid) {
+                elements.startBtn.innerHTML = '<i class="fas fa-play me-2"></i>Start Annotation';
+            } else {
+                elements.startBtn.innerHTML = '<i class="fas fa-lock me-2"></i>Complete All Fields';
+            }
+        }
+
+        function startAnnotation() {
+            if (!annotatorId || !selectedTask || !selectedLanguage) {
+                alert('Please complete all required fields.');
+                return;
+            }
+
+            // Store in localStorage for the task pages
+            localStorage.setItem('annotatorId', annotatorId);
+            localStorage.setItem('language', selectedLanguage);
+
+            // Navigate to first example (example_idx=0)
+            const targetPage = selectedTask === 'judgment' ? 'judgment_static.html' : 'writing_static.html';
+            window.location.href = `${targetPage}?example_idx=0`;
+        }
+    </script>
+</body>
+</html>
