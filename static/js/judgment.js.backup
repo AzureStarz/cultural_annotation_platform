@@ -1,0 +1,526 @@
+// Judgment task JavaScript functionality
+
+const annotations = {};
+let currentConfidence = null;
+let startTime = Date.now();
+
+function selectJudgment(field, value) {
+    annotations[field] = value;
+
+    const yesBtn = document.getElementById(field.replace('_', '_') + '_yes');
+    const noBtn = document.getElementById(field.replace('_', '_') + '_no');
+
+    yesBtn.classList.remove('active');
+    noBtn.classList.remove('active');
+
+    // Add click animation class
+    yesBtn.classList.remove('clicked');
+    noBtn.classList.remove('clicked');
+
+    if (value === true) {
+        yesBtn.classList.add('active');
+        yesBtn.classList.add('clicked');
+    } else {
+        noBtn.classList.add('active');
+        noBtn.classList.add('clicked');
+    }
+
+    // Remove click animation class after animation completes
+    setTimeout(() => {
+        yesBtn.classList.remove('clicked');
+        noBtn.classList.remove('clicked');
+    }, 500);
+
+    // Update visual indicators
+    updateAnsweredIndicators();
+
+    updateNextButton();
+}
+
+// Add visual feedback to show which questions have been answered
+function updateAnsweredIndicators() {
+    // Check each judgment group and add visual indicator if answered
+    const fields = [
+        'chosen_alignment',
+        'rejected_misalignment_0',
+        'rejected_misalignment_1',
+        'rejected_misalignment_2'
+    ];
+
+    fields.forEach(field => {
+        const container = document.getElementById(field + '_container');
+        if (container && annotations[field] !== undefined) {
+            container.classList.add('answered');
+        }
+    });
+}
+
+function selectConfidence(level) {
+    currentConfidence = level;
+
+    document.querySelectorAll('.confidence-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    document.getElementById('conf_' + level).classList.add('active');
+
+    updateNextButton();
+}
+
+function isCurrentExampleComplete() {
+    const hasChosenAlignment = annotations.chosen_alignment !== undefined;
+    const hasRejected0 = annotations['rejected_misalignment_0'] !== undefined;
+    const hasRejected1 = annotations['rejected_misalignment_1'] !== undefined;
+    const hasRejected2 = annotations['rejected_misalignment_2'] !== undefined;
+    const hasConfidence = currentConfidence !== null;
+
+    return hasChosenAlignment && hasRejected0 && hasRejected1 && hasRejected2 && hasConfidence;
+}
+
+function updateNextButton() {
+    const nextBtn = document.getElementById('nextBtn');
+    const nextBtnText = document.getElementById('nextBtnText');
+
+    if (isCurrentExampleComplete()) {
+        nextBtn.classList.remove('btn-outline-secondary', 'btn-warning');
+        nextBtn.classList.add('btn-success');
+        nextBtn.disabled = false;
+
+        if (exampleIdx + 1 < totalExamples) {
+            nextBtnText.textContent = 'Next Example';
+        } else {
+            nextBtnText.textContent = 'Submit All Annotations';
+        }
+    } else {
+        nextBtn.classList.remove('btn-success');
+        nextBtn.classList.add('btn-outline-secondary');
+        nextBtn.disabled = false;
+
+        if (exampleIdx + 1 < totalExamples) {
+            nextBtnText.textContent = 'Complete Required Fields to Continue';
+        } else {
+            nextBtnText.textContent = 'Complete All Fields to Submit';
+        }
+    }
+}
+
+function showAutoSaveIndicator() {
+    const indicator = document.getElementById('autosaveIndicator');
+    indicator.classList.add('show');
+
+    setTimeout(() => {
+        indicator.classList.remove('show');
+    }, 2000);
+}
+
+// Note: No server-side saving - Vercel is read-only. Use Download button to save work.
+
+function saveCurrentToProgress() {
+    // Save current annotations to progress object before navigating
+    const notes = document.getElementById('notes').value;
+    const timeMinutes = document.getElementById('time_minutes').value;
+    const annotationTimeSeconds = timeMinutes ? parseInt(timeMinutes) * 60 : 0;
+
+    const currentData = {
+        ...annotations,
+        confidence: currentConfidence,
+        notes: notes,
+        annotation_time_seconds: annotationTimeSeconds || 0,
+        timestamp: new Date().toISOString()
+    };
+
+    progress[exampleId] = currentData;
+}
+
+function previousExample() {
+    if (exampleIdx > 0) {
+        saveCurrentToProgress();
+        const url = new URL(window.location);
+        url.searchParams.set('example_idx', exampleIdx - 1);
+        window.location.href = url.toString();
+    }
+}
+
+function nextExample() {
+    // Check if all required fields are completed
+    if (!isCurrentExampleComplete()) {
+        showIncompleteWarning();
+        return;
+    }
+
+    saveCurrentToProgress();
+
+    if (exampleIdx + 1 < totalExamples) {
+        const url = new URL(window.location);
+        url.searchParams.set('example_idx', exampleIdx + 1);
+        window.location.href = url.toString();
+    } else {
+        showCompletionMessage();
+    }
+}
+
+function showCompletionMessage() {
+    const completedCount = Object.keys(progress).length;
+
+    const html = `
+        <div class="modal fade" id="completionModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h3 class="modal-title">
+                            <i class="fas fa-check-circle me-2"></i>
+                            All Annotations Complete!
+                        </h3>
+                    </div>
+                    <div class="modal-body">
+                        <p class="lead">
+                            <strong>Great job!</strong> You have completed all ${totalExamples} examples.
+                        </p>
+                        <p>
+                            <i class="fas fa-info-circle text-info me-2"></i>
+                            <strong>Next steps:</strong> Click the <span class="badge bg-info text-white"><i class="fas fa-download me-1"></i>Download</span> button to save your work to your PC.
+                        </p>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Note:</strong> Vercel's serverless environment cannot save files. Make sure to download your annotations!
+                        </div>
+                        <p class="mb-0">
+                            <i class="fas fa-save text-success me-2"></i>
+                            Use the <strong>Download</strong> button on any page to save your ${completedCount} annotated examples.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" data-bs-dismiss="modal">
+                            <i class="fas fa-check me-1"></i>
+                            Got it!
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add modal to body if it doesn't exist
+    if (!document.getElementById('completionModal')) {
+        document.body.insertAdjacentHTML('beforeend', html);
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('completionModal'));
+    modal.show();
+}
+
+function showIncompleteWarning() {
+    // Find which fields are missing
+    const missingFields = [];
+
+    if (annotations.chosen_alignment === undefined) {
+        missingFields.push("Chosen Completion judgment");
+    }
+    if (annotations.rejected_misalignment_0 === undefined) {
+        missingFields.push("Rejected #1 judgment");
+    }
+    if (annotations.rejected_misalignment_1 === undefined) {
+        missingFields.push("Rejected #2 judgment");
+    }
+    if (annotations.rejected_misalignment_2 === undefined) {
+        missingFields.push("Rejected #3 judgment");
+    }
+    if (currentConfidence === null) {
+        missingFields.push("Confidence level");
+    }
+
+    const missingList = missingFields.map(field => `• ${field}`).join('\n');
+
+    // Create and show warning modal
+    const modalHtml = `
+        <div class="modal fade" id="incompleteModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning text-dark">
+                        <h3 class="modal-title">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Complete Required Fields
+                        </h3>
+                    </div>
+                    <div class="modal-body py-4">
+                        <div class="text-center mb-3">
+                            <i class="fas fa-tasks fs-1 text-warning mb-3"></i>
+                            <h4>Please complete all required fields</h4>
+                            <p class="text-muted">You must answer all questions before continuing.</p>
+                        </div>
+                        <div class="alert alert-light border">
+                            <h6 class="alert-heading">Missing fields:</h6>
+                            <pre class="mb-0 text-danger" style="white-space: pre-wrap; font-size: 0.9rem;">${missingList}</pre>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-warning btn-lg w-100" data-bs-dismiss="modal">
+                            <i class="fas fa-edit me-1"></i>
+                            Go Back and Complete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Remove existing modal if any
+    const existingModal = document.getElementById('incompleteModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = new bootstrap.Modal(document.getElementById('incompleteModal'));
+    modal.show();
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        const alert = document.getElementById('incompleteModal');
+        if (alert) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+function handleDownloadClick() {
+    console.log('=== DOWNLOAD ANNOTATIONS TO PC ===');
+    console.log('Current progress:', Object.keys(progress).length, 'examples');
+    console.log('Current exampleId:', exampleId);
+    console.log('Progress data:', JSON.parse(JSON.stringify(progress)));
+
+    // Disable button during download
+    const downloadBtn = document.getElementById('downloadBtn');
+    downloadBtn.disabled = true;
+    downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Preparing...';
+
+    // Save current annotations to progress before downloading
+    saveCurrentToProgress();
+    console.log('After saveCurrentToProgress, progress size:', Object.keys(progress).length);
+
+    // Create filename with timestamp
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const filename = `cultural_annotations_${annotatorId}_${timestamp}.json`;
+
+    // Prepare complete annotation data from memory only
+    const completeAnnotationData = {
+        annotator_id: annotatorId,
+        task_type: taskType,
+        language: language,
+        annotations: progress,
+        metadata: {
+            total_annotations: Object.keys(progress).length,
+            current_session_annotations: Object.keys(progress).length,
+            timestamp: new Date().toISOString(),
+            note: 'Vercel deployment - all data stored in browser memory only'
+        }
+    };
+
+    console.log('=== READY TO DOWNLOAD ===');
+    console.log('File will be saved as:', filename);
+    console.log('Annotation data:', JSON.parse(JSON.stringify(completeAnnotationData)));
+
+    // Download directly from memory
+    downloadFileToPC(completeAnnotationData, filename);
+
+    // Re-enable button
+    downloadBtn.disabled = false;
+    downloadBtn.innerHTML = '<i class="fas fa-download me-1"></i> Download';
+
+    console.log('=== DOWNLOAD COMPLETED ===');
+    console.log('File saved. Check your downloads folder.');
+}
+
+function downloadFileToPC(annotations, filename) {
+    console.log('downloadFileToPC called with', Object.keys(annotations.annotations || {}).length, 'annotations');
+
+    // Create a Blob with the JSON data
+    const dataStr = JSON.stringify(annotations, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+    // Create a temporary download link
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(dataBlob);
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+
+    // Programmatically click the link to trigger download
+    document.body.appendChild(link);
+
+    // Force the download with a small delay to ensure it's attached to DOM
+    setTimeout(() => {
+        link.click();
+
+        // Clean up
+        setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }, 100);
+    }, 10);
+
+    // Show download confirmation
+    showDownloadConfirmation(filename);
+
+    console.log('Download triggered for file:', filename);
+}
+
+function showDownloadConfirmation(filename) {
+    const alertHtml = `
+        <div class="alert alert-success alert-dismissible fade show position-fixed"
+             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;"
+             id="downloadAlert">
+            <i class="fas fa-download me-2"></i>
+            <strong>File downloaded!</strong><br>
+            <small>Saved as: ${filename}</small>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', alertHtml);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        const alert = document.getElementById('downloadAlert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+function showSuccessMessage(count, outputFile) {
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const downloadFilename = `cultural_annotations_${annotatorId}_${timestamp}.json`;
+
+    const modalHtml = `
+        <div class="modal fade" id="successModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h3 class="modal-title">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Success!
+                        </h3>
+                    </div>
+                    <div class="modal-body py-4">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-trophy fs-1 text-success mb-3"></i>
+                            <h4>Your annotations have been saved!</h4>
+                            <p class="lead">You completed ${count} examples. Thank you for your contribution!</p>
+                            <p class="text-muted small">Preparing your download with all annotations (including history)...</p>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="alert alert-light border-2">
+                                    <h5 class="alert-heading">
+                                        <i class="fas fa-save me-2"></i>
+                                        Server-Saved File
+                                    </h5>
+                                    <p class="mb-2">Your annotations are safely stored on the server:</p>
+                                    <code class="text-break d-block bg-white p-2 rounded">${outputFile}</code>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <div class="alert alert-primary border-2">
+                                    <h5 class="alert-heading">
+                                        <i class="fas fa-download me-2"></i>
+                                        Download Your Local Copy
+                                    </h5>
+                                    <p class="mb-3">Download a copy of all your annotations (including history) to your computer:</p>
+                                    <button type="button" class="btn btn-primary btn-lg w-100" id="successModalDownloadBtn" disabled>
+                                        <i class="fas fa-spinner fa-spin me-2"></i>
+                                        Preparing Download...
+                                    </button>
+                                    <div class="form-text mt-2">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        File will be saved to your Downloads folder. Includes current session and all previously saved annotations.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning border-0 mt-3">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Important
+                            </h6>
+                            <ul class="mb-0 small">
+                                <li>The server copy is stored in the project folder</li>
+                                <li>Download your local copy as a backup</li>
+                                <li>Both files contain the same data</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <a href="/" class="btn btn-success" id="returnHomeBtn" style="display: none;">
+                            <i class="fas fa-home me-1"></i>
+                            Return to Home
+                        </a>
+                        <button type="button" class="btn btn-outline-primary" id="downloadAgainBtn" style="display: none;">
+                            <i class="fas fa-download me-1"></i>
+                            Download Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = new bootstrap.Modal(document.getElementById('successModal'));
+    modal.show();
+    console.log('=== ALL ANNOTATIONS COMPLETED ===');
+    console.log('Total examples annotated:', Object.keys(progress).length);
+    console.log('Final data for download:', JSON.parse(JSON.stringify(progress)));
+
+    // Directly download current in-memory progress (no server files in Vercel)
+    const completeAnnotationData = {
+        annotator_id: annotatorId,
+        task_type: taskType,
+        language: language,
+        annotations: progress,
+        metadata: {
+            total_annotations: Object.keys(progress).length,
+            current_session_annotations: Object.keys(progress).length,
+            timestamp: new Date().toISOString(),
+            note: 'Vercel deployment: All data stored in browser memory only. Download this file to save your work.'
+        }
+    };
+
+    // Store for later use
+    window.mergedAnnotationsData = completeAnnotationData;
+    window.mergedAnnotationsFilename = downloadFilename;
+
+    // Download the complete file
+    downloadFileToPC(completeAnnotationData, downloadFilename);
+
+    // Show the buttons
+    document.getElementById('successModalDownloadBtn').innerHTML = '<i class="fas fa-download me-2"></i>Download Complete!';
+    document.getElementById('successModalDownloadBtn').classList.remove('btn-primary', 'disabled');
+    document.getElementById('successModalDownloadBtn').classList.add('btn-success');
+
+    document.getElementById('returnHomeBtn').style.display = 'inline-block';
+    document.getElementById('downloadAgainBtn').style.display = 'inline-block';
+
+    // Add click handler for download again button
+    document.getElementById('downloadAgainBtn').onclick = function() {
+        if (window.mergedAnnotationsData) {
+            downloadFileToPC(window.mergedAnnotationsData, window.mergedAnnotationsFilename);
+        }
+    };
+
+    console.log('=== DOWNLOAD PREPARED ===');
+    console.log('User can now download file:', downloadFilename);
+
+    document.getElementById('successModal').addEventListener('hidden.bs.modal', function () {
+        window.location.href = '/';
+    });
+}
+
+// Initialize - called from HTML after variables are defined
