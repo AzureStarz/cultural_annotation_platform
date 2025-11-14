@@ -1,8 +1,19 @@
 from flask import Flask, render_template, request, redirect, url_for
 import json
 import os
+import sys
+import traceback
 
 app = Flask(__name__)
+
+# Add comprehensive error logging
+@app.errorhandler(Exception)
+def handle_exception(e):
+    print("=== UNHANDLED EXCEPTION ===", file=sys.stderr)
+    print(f"Error: {str(e)}", file=sys.stderr)
+    print(f"Type: {type(e).__name__}", file=sys.stderr)
+    traceback.print_exc(file=sys.stderr)
+    return f"Internal Server Error: {str(e)}", 500
 
 LANGUAGES = [
     'Arabic', 'Chinese', 'English', 'German',
@@ -26,7 +37,13 @@ def load_examples(task_type, language):
 @app.route('/')
 def index():
     """Main landing page"""
-    return render_template('index.html', languages=LANGUAGES)
+    try:
+        print(f"Rendering index.html with languages: {len(LANGUAGES)} languages", file=sys.stderr)
+        return render_template('index.html', languages=LANGUAGES)
+    except Exception as e:
+        print(f"ERROR in index(): {str(e)}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        return f"Error: {str(e)}<br><pre>{traceback.format_exc()}</pre>", 500
 
 @app.route('/annotate', methods=['POST'])
 def start_annotation():
@@ -52,6 +69,29 @@ def start_annotation():
                            task_type=task_type,
                            language=language,
                            annotator_id=annotator_id))
+
+# Health check route for debugging
+@app.route('/health')
+def health_check():
+    """Health check endpoint"""
+    try:
+        return {
+            'status': 'healthy',
+            'templates': os.path.exists('templates'),
+            'static': os.path.exists('static'),
+            'cwd': os.getcwd(),
+            'python_version': sys.version
+        }
+    except Exception as e:
+        return {'status': 'error', 'message': str(e)}, 500
+
+@app.route('/debug')
+def debug_page():
+    """Debug page to test basic rendering"""
+    try:
+        return render_template('index.html', languages=LANGUAGES)
+    except Exception as e:
+        return f"Error rendering template: {str(e)}<br><pre>{traceback.format_exc()}</pre>", 500
 
 @app.route('/annotate/<task_type>/<language>')
 def annotate_task(task_type, language):
